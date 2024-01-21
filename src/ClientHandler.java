@@ -11,6 +11,11 @@ public class ClientHandler implements Runnable {
         this.databaseNode = databaseNode;
     }
 
+    public ClientHandler(Socket clientSocket){
+        this.clientSocket = clientSocket;
+    }
+
+
     @Override
     public void run() {
         try (
@@ -44,5 +49,35 @@ public class ClientHandler implements Runnable {
 //                e.printStackTrace();
 //            }
 //        }
+    }
+
+    public void handleClientRequest() {
+        try (
+                BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()))
+        ) {
+            String request;
+            while ((request = reader.readLine()) != null) {
+                // Obsługa żądania klienta
+                String response = processRequest(request);
+
+                // Wysłanie odpowiedzi do klienta
+                writer.write(response + "\n");
+                writer.flush();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                clientSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private String processRequest(String request) {
+        String response = databaseNode.processRequest(request);
+        return response;
     }
 }

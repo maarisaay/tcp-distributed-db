@@ -10,13 +10,13 @@ import java.util.logging.Logger;
 
 public class DatabaseNode {
     private int tcpPort;
-    private Map<Integer, Integer> database;
     private List<NodeInfo> connectedNodes;
     private ExecutorService executorService;
     private ObjectOutputStream outputStream;
     private CommunicationModule communicationModule;
     private Logger logger;
     private ServerSocket serverSocket;
+    private final Map<Integer, Integer> database;
     private final Object databaseLock = new Object();
     private static final int initialKey = 1;
     private static final int initialValue = 100;
@@ -43,12 +43,15 @@ public class DatabaseNode {
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("Client connected: " + clientSocket.getInetAddress());
 
-                // Utwórz obiekt DatabaseNode z argumentami
-                DatabaseNode databaseNode = new DatabaseNode(tcpPort);
+                Runnable clientHandler = new ClientHandler(clientSocket, this);
+                executorService.execute(clientHandler);
 
-                // Obsługa połączenia w osobnym wątku
-                Thread clientThread = new Thread(new ClientHandler(clientSocket, databaseNode));
-                clientThread.start();
+                // Utwórz obiekt DatabaseNode z argumentami
+//                DatabaseNode databaseNode = new DatabaseNode(tcpPort);
+//
+//                // Obsługa połączenia w osobnym wątku
+//                Thread clientThread = new Thread(new ClientHandler(clientSocket, databaseNode));
+//                clientThread.start();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -56,52 +59,64 @@ public class DatabaseNode {
     }
 
     public void setValue(int key, int value) {
-        database.put(key, value);
+        synchronized (database){
+            database.put(key, value);
+        }
         System.out.println("Set key " + key + " to value " + value);
     }
 
     public int getValue(int key) {
-        return database.getOrDefault(key, -1);
+        synchronized (database){
+            return database.getOrDefault(key, -1);
+        }
     }
 
     public String findKey(int key) {
-        if (database.containsKey(key)) {
-            return "FOUND";
-        } else {
-            return "NOT FOUND";
+        synchronized (database){
+            if (database.containsKey(key)) {
+                return "FOUND";
+            } else {
+                return "NOT FOUND";
+            }
         }
     }
 
     public int getMax() {
-        int maxKey = -1;
-        int maxValue = Integer.MIN_VALUE;
+        synchronized (database){
+            int maxKey = -1;
+            int maxValue = Integer.MIN_VALUE;
 
-        for (Map.Entry<Integer, Integer> entry : database.entrySet()) {
-            if (entry.getValue() > maxValue) {
-                maxKey = entry.getKey();
-                maxValue = entry.getValue();
+            for (Map.Entry<Integer, Integer> entry : database.entrySet()) {
+                if (entry.getValue() > maxValue) {
+                    maxKey = entry.getKey();
+                    maxValue = entry.getValue();
+                }
             }
-        }
 
-        return maxKey;
+            return maxKey;
+        }
     }
 
     public int getMin() {
-        int minKey = -1;
-        int minValue = Integer.MAX_VALUE;
+        synchronized (database){
+            int minKey = -1;
+            int minValue = Integer.MAX_VALUE;
 
-        for (Map.Entry<Integer, Integer> entry : database.entrySet()) {
-            if (entry.getValue() < minValue) {
-                minKey = entry.getKey();
-                minValue = entry.getValue();
+            for (Map.Entry<Integer, Integer> entry : database.entrySet()) {
+                if (entry.getValue() < minValue) {
+                    minKey = entry.getKey();
+                    minValue = entry.getValue();
+                }
             }
-        }
 
-        return minKey;
+            return minKey;
+        }
     }
 
     public void newRecord(int key, int value) {
-        database.put(key, value);
+        synchronized (database){
+            database.put(key, value);
+        }
         System.out.println("Added new record: Key=" + key + ", Value=" + value);
     }
 
@@ -246,6 +261,10 @@ public class DatabaseNode {
         NodeInfo currentNode = new NodeInfo("localhost", tcpPort);
         connectedNodes.remove(currentNode);
         System.out.println("Node has left the network.");
+    }
+
+    public void terminate(){
+        System.exit(0);
     }
 
     public static void main(String[] args) {
