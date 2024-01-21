@@ -195,6 +195,8 @@ public class DatabaseNode {
         connectedNodes.clear();
     }
 
+
+
     public static void main(String[] args) {
         if (args.length != 1) {
             System.err.println("Usage: java DatabaseNode <tcpPort>");
