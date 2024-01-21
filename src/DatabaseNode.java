@@ -119,21 +119,26 @@ public class DatabaseNode {
         try {
             switch (operation) {
                 case "set-value":
-                    int key = Integer.parseInt(params[0]);
-                    int value = Integer.parseInt(params[1]);
+                    String[] keyValue = parts[1].split(":");
+                    int key = Integer.parseInt(keyValue[0]);
+                    int value = Integer.parseInt(keyValue[1]);
                     synchronized (databaseLock) {
-                        database.put(key, value);
+                        if(database.containsKey(key)){
+                            database.put(key, value);
+                            return "OK";
+                        } else{
+                            return "ERROR";
+                        }
                     }
-                    return "OK";
                 case "get-value":
-                    int queryKey = Integer.parseInt(params[0]);
+                    int queryKey = Integer.parseInt(parts[1]);
                     int queryValue;
                     synchronized (databaseLock) {
                         queryValue = database.getOrDefault(queryKey, -1);
                     }
                     return queryKey + ":" + queryValue;
                 case "find-key":
-                    int searchKey = Integer.parseInt(params[0]);
+                    int searchKey = Integer.parseInt(parts[1]);
                     NodeInfo nodeWithKey;
                     synchronized (databaseLock) {
                         nodeWithKey = findNodeForKey(searchKey);
@@ -147,22 +152,31 @@ public class DatabaseNode {
                     int maxKey;
                     int maxValue;
                     synchronized (databaseLock) {
-                        maxKey = Collections.max(database.keySet());
-                        maxValue = database.get(maxKey);
+                        if(!database.isEmpty()){
+                            maxKey = Collections.max(database.keySet());
+                            maxValue = database.get(maxKey);
+                            return maxKey + ":" + maxValue;
+                        }else{
+                            return "ERROR";
+                        }
                     }
-                    return maxKey + ":" + maxValue;
                 case "get-min":
                     int minKey;
                     int minValue;
                     synchronized (databaseLock) {
-                        minKey = Collections.min(database.keySet());
-                        minValue = database.get(minKey);
+                        if(!database.isEmpty()){
+                            minKey = Collections.min(database.keySet());
+                            minValue = database.get(minKey);
+                            return minKey + ":" + minValue;
+                        }else{
+                            return "ERROR";
+                        }
                     }
-                    return minKey + ":" + minValue;
                 case "new-record":
-                    int newRecordKey = Integer.parseInt(params[0]);
-                    int newRecordValue = Integer.parseInt(params[1]);
-                    synchronized (databaseLock) {
+                    String[] newRecordKeyValue = params[0].split(":");
+                    int newRecordKey = Integer.parseInt(newRecordKeyValue[0]);
+                    int newRecordValue = Integer.parseInt(newRecordKeyValue[1]);
+                    synchronized (databaseLock){
                         database.put(newRecordKey, newRecordValue);
                     }
                     return "OK";
