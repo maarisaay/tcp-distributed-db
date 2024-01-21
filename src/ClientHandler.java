@@ -14,28 +14,35 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         try (
-                ObjectOutputStream outputStream = new ObjectOutputStream(clientSocket.getOutputStream());
-                ObjectInputStream inputStream = new ObjectInputStream(clientSocket.getInputStream())
+                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+//                ObjectOutputStream outputStream = new ObjectOutputStream(clientSocket.getOutputStream());
+//                ObjectInputStream inputStream = new ObjectInputStream(clientSocket.getInputStream())
         ) {
-            while (true) {
-                // Odbieranie żądania od klienta
-                String request = (String) inputStream.readObject();
-
-                // Przetwarzanie żądania i uzyskiwanie odpowiedzi od bazy danych
+            String request;
+            while ((request = in.readLine()) != null) {
                 String response = databaseNode.processRequest(request);
-
-                // Wysyłanie odpowiedzi do klienta
-                outputStream.writeObject(response);
-                outputStream.flush();
+                out.println(response);
+//
+//                // Odbieranie żądania od klienta
+//                String request = (String) inputStream.readObject();
+//
+//                // Przetwarzanie żądania i uzyskiwanie odpowiedzi od bazy danych
+//                String response = databaseNode.processRequest(request);
+//
+//                // Wysyłanie odpowiedzi do klienta
+//                outputStream.writeObject(response);
+//                outputStream.flush();
             }
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            try {
-                clientSocket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
+//        finally {
+//            try {
+//                clientSocket.close();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
     }
 }

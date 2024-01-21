@@ -55,18 +55,15 @@ public class DatabaseNode {
         }
     }
 
-    // Przykładowa implementacja operacji set-value
     public void setValue(int key, int value) {
         database.put(key, value);
         System.out.println("Set key " + key + " to value " + value);
     }
 
-    // Przykładowa implementacja operacji get-value
     public int getValue(int key) {
         return database.getOrDefault(key, -1);
     }
 
-    // Implementacja operacji find-key
     public String findKey(int key) {
         if (database.containsKey(key)) {
             return "FOUND";
@@ -75,7 +72,6 @@ public class DatabaseNode {
         }
     }
 
-    // Implementacja operacji get-max
     public int getMax() {
         int maxKey = -1;
         int maxValue = Integer.MIN_VALUE;
@@ -90,7 +86,6 @@ public class DatabaseNode {
         return maxKey;
     }
 
-    // Implementacja operacji get-min
     public int getMin() {
         int minKey = -1;
         int minValue = Integer.MAX_VALUE;
@@ -105,7 +100,6 @@ public class DatabaseNode {
         return minKey;
     }
 
-    // Implementacja operacji new-record
     public void newRecord(int key, int value) {
         database.put(key, value);
         System.out.println("Added new record: Key=" + key + ", Value=" + value);
@@ -115,6 +109,7 @@ public class DatabaseNode {
         String[] parts = request.split(" ");
         String operation = parts[0];
         String[] params = Arrays.copyOfRange(parts, 1, parts.length);
+        Arrays.copyOfRange(parts, 1, parts.length);
 
         try {
             switch (operation) {
@@ -183,6 +178,14 @@ public class DatabaseNode {
                 case "terminate":
                     disconnectFromNodes();
                     return "OK";
+                case "join-network":
+                    String ipAddress = params[0];
+                    int port = Integer.parseInt(params[1]);
+                    joinNewtork(ipAddress, port);
+                    return "OK";
+                case "leave-network":
+                    leaveNetwork();
+                    return "OK";
                 default:
                     return "ERROR: Invalid operation";
             }
@@ -196,6 +199,28 @@ public class DatabaseNode {
         int nodeIndex = key % numberOfNodes;
         return connectedNodes.get(nodeIndex);
     }
+
+    public void connectToNodes(String ipAddress, int port){
+
+            for(NodeInfo existingNode : connectedNodes){
+                if(!existingNode.getIp().equals(ipAddress) || existingNode.getPort() != port){
+                    String infoMessage = "New node connected: " + ipAddress + ":" + port;
+                    try{
+                        Socket socket = new Socket(existingNode.getIp(), existingNode.getPort());
+                        PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                        out.println(infoMessage);
+                        socket.close();
+
+                        System.out.println("Sent info to exisiting node: " + existingNode.getIp() + ":" + existingNode.getPort());
+                    } catch (IOException e){
+                        e.printStackTrace();
+                    }
+                }
+            }
+            connectedNodes.add(new NodeInfo(ipAddress, port));
+        System.out.println("Connected to new node: " + ipAddress + ":" + port);
+    }
+
     private void disconnectFromNodes(){
         for (NodeInfo nodeInfo : connectedNodes){
             try{
@@ -209,7 +234,19 @@ public class DatabaseNode {
         connectedNodes.clear();
     }
 
+    private void joinNewtork(String ipAddress, int port){
+        NodeInfo newNode = new NodeInfo(ipAddress, port);
+        if(!connectedNodes.contains(newNode)) {
+            connectedNodes.add(newNode);
+            System.out.println("Node at " + ipAddress + ":" + port + " has joined the network.");
+        }
+    }
 
+    private void leaveNetwork(){
+        NodeInfo currentNode = new NodeInfo("localhost", tcpPort);
+        connectedNodes.remove(currentNode);
+        System.out.println("Node has left the network.");
+    }
 
     public static void main(String[] args) {
         if (args.length != 1) {

@@ -83,4 +83,15 @@ public class CommunicationModule implements Runnable {
             e.printStackTrace();
         }
     }
+
+    public static void sendJoinRequest(String ipAddress, int port, int localPort){
+        try{
+            Socket socket = new Socket(ipAddress, port);
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+            out.println("JOIN "+ localPort);
+            socket.close();
+        } catch (IOException e){
+            e.printStackTrace();
+        }
+    }
 }
